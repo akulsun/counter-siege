@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Counter Siege • Tactical 1v1 FPS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Rajdhani:wght@500;600;700&family=Syne:wght@700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & CSS TOKENS (REFINED TACTICAL AESTHETIC)
+       ========================================================================== */
+    :root {
+      /* Aesthetic Typography Tokens */
+      --font-brand: 'Syne', -apple-system, sans-serif;
+      --font-display: Arial, Helvetica, sans-serif;
+      --font-ui: Arial, Helvetica, sans-serif;
+      --font-mono: Arial, Helvetica, sans-serif;
+
+      /* Surfaces - Matte Black & Gunmetal Charcoal Glass (Zero Blue Tint) */
+      --bg-dark: #08080a;
+      --bg-surface: #0e0e11;
+      --bg-surface-elevated: #151518;
+      --bg-glass: rgba(12, 12, 14, 0.82);
+      --bg-glass-elevated: rgba(18, 18, 20, 0.92);
+      --bg-glass-card: rgba(15, 15, 18, 0.78);
+      --bg-glass-card-hover: rgba(24, 24, 28, 0.92);
+      --bg-glass-card-selected: rgba(28, 28, 34, 0.98);
+
+      /* Hairline Borders */
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-highlight: rgba(255, 255, 255, 0.28);
+      --border-accent: rgba(255, 92, 40, 0.45);
+
+      /* Tactical Accents */
+      --accent-warm: #ff5c28;
+      --accent-warm-hover: #ff7244;
+      --accent-warm-glow: rgba(255, 92, 40, 0.28);
+      --accent-sand: #e2b472;
+      --accent-sand-muted: #8e734c;
+      --accent-sand-glow: rgba(226, 180, 114, 0.3);
+      --accent-orange: #ff9800;
+
+      /* High-Contrast Typography */
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #5e6b7e;
+
+      /* In-Game Tactical HUD Colors */
+      --hud-green: #10b981;
+      --hud-green-glow: rgba(16, 185, 129, 0.35);
+      --hud-yellow: #f59e0b;
+      --hud-red: #f43f5e;
+      --hud-red-glow: rgba(244, 63, 94, 0.35);
+      --hud-blue: #38bdf8;
+      --hud-blue-glow: rgba(56, 189, 248, 0.35);
+
+      --hud-bg: rgba(11, 11, 13, 0.85);
+      --hud-border: rgba(255, 255, 255, 0.08);
+      --hud-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.03);
+
+      /* Motion */
+      --ease-tactical: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Reset & Viewport Lock */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: Arial, Helvetica, sans-serif;
+      font-style: italic;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: Arial, Helvetica, sans-serif;
+      font-style: italic;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font-family: Arial, Helvetica, sans-serif;
+      font-style: italic;
+    }
+
+    #game-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      outline: none;
+    }
+
+    /* ==========================================================================
+       TACTICAL IN-GAME HUD
+       ========================================================================== */
+    #hud-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      display: none; /* activated when match starts */
+      font-family: var(--font-mono);
+    }
+
+    /* --------------------------------------------------------------------------
+       Top Banner: Floating Match Status Capsule
+       -------------------------------------------------------------------------- */
+    .top-banner {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      padding: 7px 22px;
+      border-radius: 9999px;
+      box-shadow: var(--hud-shadow);
+      transition: all 0.2s var(--ease-tactical);
+    }
+
+    .team-badge-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .team-label-mini {
+      font-size: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .team-score {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .team-player {
+      color: var(--hud-blue);
+      text-shadow: 0 0 12px var(--hud-blue-glow);
+    }
+
+    .team-enemy {
+      color: var(--hud-red);
+      text-shadow: 0 0 12px var(--hud-red-glow);
+    }
+
+    .match-timer-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      position: relative;
+    }
+
+    .match-timer {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-primary);
+      min-width: 68px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .match-mode-tag {
+      font-size: 9.5px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      color: var(--accent-sand);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .match-mode-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-sand);
+      box-shadow: 0 0 6px var(--accent-sand);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    /* --------------------------------------------------------------------------
+       Center Reticle & Hitmarker
+       -------------------------------------------------------------------------- */
+    #crosshair-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      pointer-events: none;
+    }
+
+    .crosshair-line {
+      position: absolute;
+      background: #34d399;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.95);
+      transition: transform 0.05s ease-out;
+      border-radius: 0.5px;
+    }
+
+    .ch-top {
+      top: 9px;
+      left: 19px;
+      width: 2px;
+      height: 8px;
+      transform-origin: bottom center;
+    }
+
+    .ch-bottom {
+      bottom: 9px;
+      left: 19px;
+      width: 2px;
+      height: 8px;
+      transform-origin: top center;
+    }
+
+    .ch-left {
+      top: 19px;
+      left: 9px;
+      width: 8px;
+      height: 2px;
+      transform-origin: right center;
+    }
+
+    .ch-right {
+      top: 19px;
+      right: 9px;
+      width: 8px;
+      height: 2px;
+      transform-origin: left center;
+    }
+
+    .ch-dot {
+      top: 19px;
+      left: 19px;
+      width: 2px;
+      height: 2px;
+      background: #34d399;
+    }
+
+    /* Precision Hitmarker */
+    #hitmarker {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 22px;
+      height: 22px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.08s ease-out;
+    }
+
+    #hitmarker::before,
+    #hitmarker::after {
+      content: '';
+      position: absolute;
+      background: #f43f5e;
+      box-shadow: 0 0 6px rgba(244, 63, 94, 0.85);
+    }
+
+    #hitmarker::before {
+      top: 0;
+      left: 10px;
+      width: 2px;
+      height: 22px;
+    }
+
+    #hitmarker::after {
+      top: 10px;
+      left: 0;
+      width: 22px;
+      height: 2px;
+    }
+
+    #hitmarker.active {
+      opacity: 1;
+    }
+
+    #hitmarker.headshot::before,
+    #hitmarker.headshot::after {
+      background: #fbbf24;
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.95);
+    }
+
+    /* Sniper Scope Overlay (AWP) */
+    #scope-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 38%, rgba(5, 6, 8, 0.98) 40%);
+      pointer-events: none;
+      display: none;
+      z-index: 9;
+    }
+
+    .scope-line-h {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: rgba(15, 17, 23, 0.9);
+    }
+
+    .scope-line-v {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      background: rgba(15, 17, 23, 0.9);
+    }
+
+    .scope-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(74vh, 74vw);
+      height: min(74vh, 74vw);
+      border: 1.5px solid rgba(25, 28, 38, 0.95);
+      border-radius: 50%;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Damage Pulse Vignette */
+    #damage-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 40%, rgba(244, 63, 94, 0.6) 100%);
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+      z-index: 8;
+    }
+
+    /* --------------------------------------------------------------------------
+       Tactical Real-Time FPS & Performance Monitor (Top Right)
+       -------------------------------------------------------------------------- */
+    #fps-counter {
+      position: absolute;
+      top: 18px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(10, 11, 14, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 6px 12px;
+      border-radius: 6px;
+      z-index: 40;
+      pointer-events: none;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+    }
+
+    .fps-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      transition: background 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+
+    .fps-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: #10b981;
+      font-family: 'JetBrains Mono', Consolas, monospace !important;
+      letter-spacing: 0.5px;
+      line-height: 1;
+      min-width: 26px;
+      text-align: right;
+    }
+
+    .fps-unit {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-family: Arial, Helvetica, sans-serif !important;
+    }
+
+    .fps-sep {
+      color: rgba(255, 255, 255, 0.18);
+      font-size: 11px;
+    }
+
+    .fps-ms {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', Consolas, monospace !important;
+      min-width: 44px;
+    }
+
+    /* Color States for FPS Health */
+    #fps-counter.fps-good .fps-dot { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    #fps-counter.fps-good .fps-val { color: #10b981; }
+
+    #fps-counter.fps-warn .fps-dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    #fps-counter.fps-warn .fps-val { color: #f59e0b; }
+
+    #fps-counter.fps-bad .fps-dot { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+    #fps-counter.fps-bad .fps-val { color: #f43f5e; }
+
+    /* --------------------------------------------------------------------------
+       Kill Feed: Counter-Strike 2 Tactical Feed
+       -------------------------------------------------------------------------- */
+    #killfeed {
+      position: absolute;
+      top: 60px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    .kill-msg {
+      background: rgba(12, 16, 22, 0.90);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 5px 12px;
+      font-size: 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+      animation: fadeInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-style: italic !important;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .kill-msg.local-killer {
+      border: 1px solid rgba(249, 115, 22, 0.75);
+      background: rgba(14, 18, 24, 0.94);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 12px rgba(249, 115, 22, 0.3);
+    }
+
+    .kill-msg.local-victim {
+      border: 1px solid rgba(244, 63, 94, 0.65);
+      background: rgba(14, 18, 24, 0.94);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 12px rgba(244, 63, 94, 0.25);
+    }
+
+    .kill-killer,
+    .kill-victim {
+      font-weight: 700;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-style: italic !important;
+    }
+
+    .kill-name-player {
+      color: #38bdf8 !important;
+      text-shadow: 0 0 6px rgba(56, 189, 248, 0.35);
+    }
+
+    .kill-name-enemy {
+      color: #f87171 !important;
+      text-shadow: 0 0 6px rgba(248, 113, 113, 0.35);
+    }
+
+    .kill-name-neutral {
+      color: #94a3b8 !important;
+    }
+
+    .kill-weapon-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 18px;
+      margin: 0 1px;
+    }
+
+    .kill-weapon-svg {
+      height: 16px;
+      width: auto;
+      max-width: 68px;
+      fill: #f1f5f9;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
+      display: block;
+    }
+
+    .kill-weapon-text {
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .kill-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+
+    .kill-badge svg {
+      display: block;
+    }
+
+    .kill-jumpshot {
+      color: #38bdf8;
+      filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.65));
+    }
+
+    .kill-headshot {
+      color: #ef4444;
+      filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+    }
+
+    .kill-noscope {
+      color: #f1f5f9;
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45));
+    }
+
+    /* --------------------------------------------------------------------------
+       Bottom-Left: Tactical Vitals Dock (Health & Shield)
+       -------------------------------------------------------------------------- */
+    .vitals-dock {
+      position: absolute;
+      bottom: 24px;
+      left: 28px;
+      display: flex;
+      gap: 12px;
+      z-index: 12;
+    }
+
+    .vital-card {
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 10px 16px;
+      border-radius: 8px;
+      min-width: 142px;
+      box-shadow: var(--hud-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s var(--ease-tactical);
+    }
+
+    .vital-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .vital-label-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+    }
+
+    .vital-label-group svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    .vital-value {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+    }
+
+    .health-val {
+      color: var(--hud-green);
+      text-shadow: 0 0 10px var(--hud-green-glow);
+    }
+
+    .armor-val {
+      color: var(--hud-blue);
+      text-shadow: 0 0 10px var(--hud-blue-glow);
+    }
+
+    .vital-bar-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .vital-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.15s ease-out, background 0.2s ease-out;
+    }
+
+    .health-fill {
+      background: var(--hud-green);
+      box-shadow: 0 0 8px var(--hud-green-glow);
+      width: 100%;
+    }
+
+    .armor-fill {
+      background: var(--hud-blue);
+      box-shadow: 0 0 8px var(--hud-blue-glow);
+      width: 100%;
+    }
+
+    /* --------------------------------------------------------------------------
+       Bottom-Center: Velocity Indicator
+       -------------------------------------------------------------------------- */
+    .velocity-status {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 7px 18px;
+      border-radius: 9999px;
+      font-size: 11px;
+      box-shadow: var(--hud-shadow);
+      z-index: 12;
+      user-select: none;
+      transition: border-color 0.2s var(--ease-tactical);
+    }
+
+    .velocity-status:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .velocity-label-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+    }
+
+    .velocity-label-group svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
+
+    .velocity-divider {
+      width: 1px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .velocity-readout {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .velocity-val {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-sand);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+      min-width: 26px;
+      text-align: right;
+      transition: color 0.15s ease, text-shadow 0.15s ease;
+    }
+
+    .velocity-val.accurate {
+      color: var(--hud-green);
+      text-shadow: 0 0 8px var(--hud-green-glow);
+    }
+
+    .velocity-unit {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    /* --------------------------------------------------------------------------
+       Bottom-Right: Ammo Dock & Weapon Readout
+       -------------------------------------------------------------------------- */
+    .ammo-dock {
+      position: absolute;
+      bottom: 24px;
+      right: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      z-index: 12;
+    }
+
+    .ammo-card {
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: var(--hud-shadow);
+      min-width: 165px;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ammo-counts {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .ammo-current {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent-sand);
+      line-height: 0.95;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+      text-shadow: 0 0 14px var(--accent-sand-glow);
+    }
+
+    .ammo-divider {
+      font-size: 18px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .ammo-reserve {
+      font-size: 17px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .weapon-name-tag {
+      font-size: 11px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+
+    .reload-track {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      margin-top: 4px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .reload-track.reloading {
+      opacity: 1;
+    }
+
+    .reload-progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-warm), #ff8a65);
+      box-shadow: 0 0 8px var(--accent-warm);
+      border-radius: 9999px;
+    }
+
+    /* --------------------------------------------------------------------------
+       Right Side: Tactical Weapon Rack (Positioned Above Ammo Dock)
+       -------------------------------------------------------------------------- */
+    .weapon-rack {
+      position: absolute;
+      right: 28px;
+      bottom: 122px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 12;
+      min-width: 165px;
+    }
+
+    .rack-slot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(14, 14, 17, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.18s var(--ease-tactical);
+      opacity: 0.55;
+      position: relative;
+    }
+
+    .rack-slot::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      bottom: 20%;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: transparent;
+      transition: all 0.18s var(--ease-tactical);
+    }
+
+    .rack-slot.active {
+      opacity: 1;
+      background: rgba(26, 26, 32, 0.95);
+      border-color: rgba(226, 180, 114, 0.5);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65), 0 0 16px rgba(226, 180, 114, 0.15);
+      transform: translateX(-4px);
+    }
+
+    .rack-slot.active::before {
+      background: var(--accent-sand);
+      box-shadow: 0 0 8px var(--accent-sand);
+    }
+
+    .rack-key {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+    }
+
+    .rack-slot.active .rack-key {
+      color: #0b0c10;
+      background: var(--accent-sand);
+      box-shadow: 0 0 6px var(--accent-sand);
+    }
+
+    .rack-icon {
+      width: 76px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rack-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      color: rgba(245, 242, 235, 0.4);
+      overflow: visible;
+      transition: all 0.15s ease-out;
+    }
+
+    .rack-slot.active .rack-icon svg {
+      color: var(--accent-sand);
+      fill: var(--accent-sand);
+      filter: drop-shadow(0 0 6px rgba(226, 180, 114, 0.55));
+    }
+
+    .rack-name {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      width: 76px;
+    }
+
+    .rack-slot.active .rack-name {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       MODALS, DIALOGS & OVERLAYS
+       ========================================================================== */
+    .modal-backdrop,
+    .menu-backdrop,
+    .weapon-select-backdrop {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 35%, rgba(18, 18, 22, 0.92), rgba(6, 6, 8, 0.98));
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: modalFadeIn 0.22s var(--ease-tactical);
+      z-index: 100;
+    }
+
+    /* Common Card Styling */
+    .menu-card {
+      width: 100%;
+      max-width: 580px;
+      background: rgba(13, 13, 16, 0.90);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 18px;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 92, 40, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      padding: 38px 42px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+    }
+
+    .menu-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 92, 40, 0.8), rgba(226, 180, 114, 0.8), transparent);
+    }
+
+    /* Brand Header */
+    .brand-header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .brand-title {
+      font-family: var(--font-brand) !important;
+      font-style: normal !important;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 0;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Action Buttons */
+    .menu-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 700;
+      font-family: var(--font-display);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-tactical);
+      border: 1px solid transparent;
+      outline: none;
+      position: relative;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent-warm);
+      outline-offset: 3px;
+    }
+
+    .btn:active {
+      transform: scale(0.985);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff5c28 0%, #eb4714 100%);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 24px rgba(255, 92, 40, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ff6c3b 0%, #f4501a 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(255, 92, 40, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(20, 20, 24, 0.8);
+      color: var(--text-primary);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(30, 30, 36, 0.95);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-medium);
+    }
+
+    .btn-outline:hover {
+      color: var(--text-primary);
+      border-color: var(--border-highlight);
+      background: rgba(255, 255, 255, 0.04);
+      transform: translateY(-1px);
+    }
+
+    /* P2P Connection Panels */
+    .connection-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(14, 14, 17, 0.92);
+      border: 1px solid rgba(226, 180, 114, 0.25);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
+      animation: modalFadeIn 0.2s var(--ease-tactical);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent-sand);
+      font-weight: 700;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .text-input {
+      flex: 1;
+      background: rgba(9, 9, 11, 0.95);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 11px 16px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      outline: none;
+      transition: all 0.15s;
+    }
+
+    .text-input:focus {
+      border-color: var(--accent-warm);
+      box-shadow: 0 0 0 3px rgba(255, 92, 40, 0.18);
+    }
+
+    .room-code-display {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-sand);
+      letter-spacing: 2px;
+      padding: 12px;
+      background: rgba(9, 9, 11, 0.95);
+      border: 1px dashed rgba(226, 180, 114, 0.4);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .room-code-display:hover {
+      border-color: var(--accent-sand);
+      background: rgba(226, 180, 114, 0.08);
+      transform: scale(1.01);
+    }
+
+    .status-text {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--hud-yellow);
+      animation: pulseDot 1.5s infinite;
+    }
+
+    /* Keybindings Sheet & Controls Bento Guide */
+    .controls-guide-title {
+      font-size: 10px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls-guide-title::before,
+    .controls-guide-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .controls-sheet {
+      border-top: none;
+      padding-top: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .control-chip {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 7px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .control-chip:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .control-chip .key-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(226, 180, 114, 0.1);
+      border: 1px solid rgba(226, 180, 114, 0.25);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--accent-sand);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+    }
+
+    .control-chip .chip-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .menu-footer-tag {
+      margin-top: 18px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: rgba(148, 163, 184, 0.4);
+      text-transform: uppercase;
+    }
+
+    /* ==========================================================================
+       PRE-ROUND WEAPON SELECTION MODAL (TACTICAL ARSENAL)
+       ========================================================================== */
+    .weapon-select-backdrop {
+      z-index: 110;
+      display: none; /* activated before rounds */
+    }
+
+    .weapon-select-card {
+      width: 100%;
+      max-width: 860px;
+      background: rgba(13, 13, 16, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 28px 36px;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+    }
+
+    .weapon-select-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(226, 180, 114, 0.75), transparent);
+    }
+
+    .ws-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .ws-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 1px;
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    .ws-subtitle {
+      font-size: 12.5px;
+      font-family: var(--font-ui);
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .ws-section {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .ws-section-title {
+      font-size: 11px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ws-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .ws-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .ws-weapon-card {
+      background: rgba(18, 18, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      transition: all 0.2s var(--ease-tactical);
+      user-select: none;
+    }
+
+    .ws-weapon-card:hover {
+      background: rgba(28, 28, 34, 0.92);
+      border-color: rgba(226, 180, 114, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .ws-weapon-card.selected {
+      background: rgba(30, 30, 38, 0.98);
+      border-color: var(--accent-sand);
+      box-shadow: 0 0 24px rgba(226, 180, 114, 0.22), 0 8px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .ws-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ws-weapon-name {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .ws-weapon-card.selected .ws-weapon-name {
+      color: var(--accent-sand);
+    }
+
+    .ws-check-badge {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition: all 0.15s;
+    }
+
+    .ws-check-badge svg {
+      width: 10px;
+      height: 10px;
+      stroke: currentColor;
+      stroke-width: 2.8;
+      fill: none;
+    }
+
+    .ws-weapon-card.selected .ws-check-badge {
+      border-color: var(--accent-sand);
+      background: var(--accent-sand);
+      color: #0d1017;
+    }
+
+    .ws-icon-wrap {
+      width: 100%;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+    }
+
+    .ws-icon-wrap svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      color: rgba(245, 242, 235, 0.4);
+      transition: all 0.18s;
+    }
+
+    .ws-weapon-card.selected .ws-icon-wrap svg {
+      color: var(--accent-sand);
+      filter: drop-shadow(0 0 8px rgba(226, 180, 114, 0.55));
+    }
+
+    .ws-card-desc {
+      font-size: 11px;
+      font-family: var(--font-ui);
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .ws-knife-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(18, 18, 22, 0.65);
+      border: 1px dashed rgba(226, 180, 114, 0.3);
+      border-radius: 10px;
+      padding: 11px 18px;
+    }
+
+    .ws-knife-badge {
+      font-size: 9.5px;
+      font-family: var(--font-display);
+      padding: 3px 9px;
+      background: rgba(226, 180, 114, 0.12);
+      border: 1px solid rgba(226, 180, 114, 0.28);
+      color: var(--accent-sand);
+      border-radius: 5px;
+      font-weight: 700;
+      white-space: nowrap;
+      letter-spacing: 1px;
+    }
+
+    .ws-knife-icon {
+      width: 72px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .ws-knife-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      color: var(--accent-sand);
+    }
+
+    .ws-knife-text {
+      font-size: 11.5px;
+      font-family: var(--font-ui);
+      color: var(--text-secondary);
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    .ws-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 16px;
+      gap: 16px;
+    }
+
+    .ws-status-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+    }
+
+    .ws-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-sand);
+      box-shadow: 0 0 8px var(--accent-sand);
+      animation: pulseDot 1.6s infinite;
+    }
+
+    .btn-deploy-loadout {
+      padding: 12px 34px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ff5c28 0%, #eb4714 100%);
+      box-shadow: 0 8px 24px rgba(255, 92, 40, 0.4);
+    }
+
+    .btn-deploy-loadout:hover {
+      background: linear-gradient(135deg, #ff6c3b 0%, #f4501a 100%);
+      box-shadow: 0 12px 30px rgba(255, 92, 40, 0.55);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       PAUSE MENU & GAME OVER MODALS
+       ========================================================================== */
+    #pause-menu {
+      position: absolute;
+      inset: 0;
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-over-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 130;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .game-over-card {
+      background: rgba(13, 13, 16, 0.92);
+      border: 1px solid var(--border-medium);
+      border-radius: 18px;
+      padding: 40px 48px;
+      text-align: center;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9);
+      animation: modalFadeIn 0.25s var(--ease-tactical);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+    }
+
+    .game-over-title {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .game-over-title.win {
+      color: var(--hud-green);
+      text-shadow: 0 0 24px var(--hud-green-glow);
+    }
+
+    .game-over-title.loss {
+      color: var(--hud-red);
+      text-shadow: 0 0 24px var(--hud-red-glow);
+    }
+
+    /* Keyframe Animations */
+    @keyframes pulseDot {
+      0%, 100% {
+        opacity: 0.4;
+        transform: scale(0.9);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.975);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* ==========================================================================
+       TACTICAL OPTIONS & SETTINGS MODAL
+       ========================================================================== */
+    .options-card {
+      max-width: 520px;
+      padding: 32px 36px;
+    }
+
+    .options-header {
+      margin-bottom: 22px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+    }
+
+    .options-title {
+      font-family: var(--font-display) !important;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .options-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .options-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .setting-group {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .setting-group:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .setting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .setting-label-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setting-name {
+      font-family: var(--font-display);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.5px;
+    }
+
+    .setting-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    .setting-val-display {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-sand);
+      background: rgba(226, 180, 114, 0.08);
+      border: 1px solid rgba(226, 180, 114, 0.22);
+      border-radius: 6px;
+      padding: 3px 8px;
+      min-width: 52px;
+      text-align: center;
+    }
+
+    .setting-control-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Range Slider */
+    .tactical-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .tactical-slider:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .tactical-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-warm);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px var(--accent-warm-glow);
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.15s;
+    }
+
+    .tactical-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: var(--accent-warm-hover);
+    }
+
+    .tactical-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-warm);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px var(--accent-warm-glow);
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.15s;
+    }
+
+    /* Numeric Input */
+    .tactical-num-input {
+      width: 68px;
+      background: rgba(9, 9, 11, 0.95);
+      border: 1px solid var(--border-medium);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .tactical-num-input:focus {
+      border-color: var(--accent-warm);
+      box-shadow: 0 0 0 2px rgba(255, 92, 40, 0.2);
+    }
+
+    /* Toggle switch row */
+    .setting-toggle-group {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tactical-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .tactical-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      transition: 0.25s var(--ease-tactical);
+    }
+
+    .switch-slider::before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #cbd5e1;
+      border-radius: 50%;
+      transition: 0.25s var(--ease-tactical);
+    }
+
+    .tactical-switch input:checked + .switch-slider {
+      background-color: var(--accent-warm);
+      box-shadow: 0 0 12px var(--accent-warm-glow);
+      border-color: var(--accent-warm);
+    }
+
+    .tactical-switch input:checked + .switch-slider::before {
+      transform: translateX(20px);
+      background-color: #ffffff;
+    }
+
+    .btn-preset {
+      flex: 1;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(22, 24, 28, 0.95);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-medium);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-style: italic !important;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-preset:hover {
+      color: var(--text-primary);
+      border-color: var(--border-highlight);
+      background: rgba(32, 35, 42, 0.95);
+    }
+
+    .btn-preset.active {
+      background: rgba(255, 92, 40, 0.16);
+      border-color: var(--accent-warm);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(255, 92, 40, 0.3);
+    }
+
+    .options-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- WebGL Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Damage Screen Pulse Vignette -->
+  <div id="damage-flash"></div>
+
+  <!-- AWP Sniper Scope Overlay -->
+  <div id="scope-overlay">
+    <div class="scope-line-h"></div>
+    <div class="scope-line-v"></div>
+    <div class="scope-circle"></div>
+  </div>
+
+  <!-- In-Game HUD -->
+  <div id="hud-layer">
+    <!-- Top Match Header -->
+    <div class="top-banner">
+      <div class="team-badge-wrap">
+        <span class="team-label-mini">YOU</span>
+        <div class="team-score team-player" id="score-player">0</div>
+      </div>
+      <div class="match-timer-wrap">
+        <div class="match-timer" id="match-timer">01:45</div>
+      </div>
+      <div class="team-badge-wrap">
+        <span class="team-label-mini">ENEMY</span>
+        <div class="team-score team-enemy" id="score-enemy">0</div>
+      </div>
+      <div class="match-mode-tag" id="mode-tag">
+        <span class="match-mode-dot"></span>
+        <span>BOT DUEL</span>
+      </div>
+    </div>
+
+    <!-- Real-Time Top-Right Tactical FPS Counter -->
+    <div id="fps-counter" class="fps-counter fps-good">
+      <div class="fps-dot" id="fps-dot"></div>
+      <span class="fps-val" id="fps-val">--</span>
+      <span class="fps-unit">FPS</span>
+      <span class="fps-sep">/</span>
+      <span class="fps-ms" id="fps-ms">-- ms</span>
+    </div>
+
+    <!-- Kill Feed -->
+    <div id="killfeed"></div>
+
+    <!-- Center Reticle & Hitmarker -->
+    <div id="crosshair-container">
+      <div class="crosshair-line ch-top" id="ch-top"></div>
+      <div class="crosshair-line ch-bottom" id="ch-bottom"></div>
+      <div class="crosshair-line ch-left" id="ch-left"></div>
+      <div class="crosshair-line ch-right" id="ch-right"></div>
+      <div class="crosshair-line ch-dot"></div>
+      <div id="hitmarker"></div>
+    </div>
+
+    <!-- Bottom Left: Health & Shield (Vitals Dock) -->
+    <div class="vitals-dock">
+      <!-- Health Card -->
+      <div class="vital-card">
+        <div class="vital-header">
+          <div class="vital-label-group">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+            </svg>
+            <span>HEALTH</span>
+          </div>
+          <span class="vital-value health-val" id="hud-health">100</span>
+        </div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill health-fill" id="health-bar"></div>
+        </div>
+      </div>
+
+      <!-- Shield Card -->
+      <div class="vital-card">
+        <div class="vital-header">
+          <div class="vital-label-group">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 17.9c-3.35-.97-6-4.66-6-8.81V6.3l6-2.25 6 2.25v4.79c0 4.15-2.65 7.84-6 8.81z"/>
+            </svg>
+            <span>SHIELD</span>
+          </div>
+          <span class="vital-value armor-val" id="hud-armor">100</span>
+        </div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill armor-fill" id="armor-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Center: Player Velocity Display -->
+    <div class="velocity-status" id="hud-velocity-wrap">
+      <div class="velocity-label-group">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 4a8 8 0 0 0-8 8c0 2.21.89 4.21 2.34 5.66l1.41-1.41A5.98 5.98 0 0 1 6 12a6 6 0 1 1 12 0c0 1.66-.67 3.16-1.76 4.24l1.41 1.41A7.97 7.97 0 0 0 20 12a8 8 0 0 0-8-8zm-1 5v4.59l3.71 2.22.71-1.22-3.42-2.09V9h-1z"/>
+        </svg>
+        <span>VELOCITY</span>
+      </div>
+      <div class="velocity-divider"></div>
+      <div class="velocity-readout">
+        <span class="velocity-val accurate" id="hud-velocity">0.0</span>
+        <span class="velocity-unit">u/s</span>
+      </div>
+    </div>
+
+    <!-- Bottom Right: Ammo & Weapon Title -->
+    <div class="ammo-dock">
+      <div class="ammo-card">
+        <div class="ammo-counts">
+          <span class="ammo-current" id="hud-ammo">30</span>
+          <span class="ammo-divider">/</span>
+          <span class="ammo-reserve" id="hud-reserve">90</span>
+        </div>
+        <div class="weapon-name-tag" id="hud-weapon">AK-47</div>
+        <div class="reload-track" id="reload-track">
+          <div class="reload-progress" id="reload-progress"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Weapon Inventory Rack (Silhouettes - Above Ammo Dock) -->
+    <div class="weapon-rack" id="weapon-rack">
+      <!-- Slot 1: Primary (AK-47 / AWP / Shotgun) -->
+      <div class="rack-slot active" data-slot="0" id="rack-slot-0">
+        <span class="rack-key">1</span>
+        <div class="rack-icon" id="rack-icon-0">
+          <svg viewBox="0 0 100 32">
+            <path d="M2,21 L5,15 L22,12 L30,13.5 L30,18.5 L24,20 L4,24 Z" />
+            <path d="M30,13.5 L52,13.5 L52,20 L30,20 Z" />
+            <path d="M29,20 L24,27.5 C24,29 25,29.5 27.5,29.5 L32,28.5 L34,20 Z" />
+            <path d="M34,20.5 C34.5,23.5 39,23.5 41,20.5" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path d="M41,20 L42,24 C44,28 47.5,30.5 52,31 C54.5,31 56,30 56,28.5 C52,28 49,25.5 48,20 Z" />
+            <path d="M52,12.5 L67,12.5 L66,19.5 L52,19.5 Z" />
+            <rect x="67" y="14" width="23" height="2.5" />
+            <rect x="66" y="12.5" width="6" height="2" />
+            <polygon points="86,11 88,9 90,11 90,14 86,14" />
+            <polygon points="90,14 97,13 97,16.5 90,16.5" />
+          </svg>
+        </div>
+        <span class="rack-name" id="rack-name-0">AK-47</span>
+      </div>
+
+      <!-- Slot 2: Secondary (Pistol / Deagle / Revolver) -->
+      <div class="rack-slot" data-slot="1" id="rack-slot-1">
+        <span class="rack-key">2</span>
+        <div class="rack-icon" id="rack-icon-1">
+          <svg viewBox="0 0 100 32">
+            <path fill-rule="evenodd"
+              d="M30,11 L32,9 L34,11 L68,11 L70,9 L72,11 L74,11 L74,18 L30,18 Z M48,11.5 L56,11.5 L56,14.5 L48,14.5 Z" />
+            <line x1="33" y1="12" x2="33" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+            <line x1="35.5" y1="12" x2="35.5" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+            <line x1="38" y1="12" x2="38" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+            <rect x="52" y="18" width="22" height="3" />
+            <path d="M45,18 L46,23 C48,24.5 53,24.5 54,18" fill="none" stroke="currentColor" stroke-width="1.3" />
+            <path d="M49,18 C49,20 50,21 51,21" fill="none" stroke="currentColor" stroke-width="1.1" />
+            <path d="M30,18 C33,18 35,19 36,21 L33,28 C33,29.5 35,30.5 38,30.5 L45,29.5 L47,21 L44,18 Z" />
+          </svg>
+        </div>
+        <span class="rack-name" id="rack-name-1">PISTOL</span>
+      </div>
+
+      <!-- Slot 3: Default Melee Knife (Always Equipped) -->
+      <div class="rack-slot" data-slot="2" id="rack-slot-2">
+        <span class="rack-key">3</span>
+        <div class="rack-icon" id="rack-icon-2">
+          <svg viewBox="0 0 100 32">
+            <rect x="8" y="13" width="4" height="6" rx="1" />
+            <path d="M12,12.5 L36,13.5 L36,18.5 L12,19.5 Z" />
+            <line x1="18" y1="13" x2="18" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <line x1="24" y1="13" x2="24" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <line x1="30" y1="13" x2="30" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <rect x="36" y="9" width="4" height="14" rx="0.8" />
+            <path d="M40,11 L74,11 L88,16 L74,21 L40,21 Z" />
+            <line x1="44" y1="16" x2="72" y2="16" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+            <line x1="46" y1="11" x2="48" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="52" y1="11" x2="54" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="58" y1="11" x2="60" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="64" y1="11" x2="66" y2="9.5" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </div>
+        <span class="rack-name" id="rack-name-2">KNIFE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pre-Round Weapon Selection Modal -->
+  <div class="weapon-select-backdrop" id="weapon-select-modal" style="display: none;">
+    <div class="weapon-select-card">
+      <div class="ws-header">
+        <h2 class="ws-title">CHOOSE LOADOUT</h2>
+      </div>
+
+      <!-- Primary Selection (AK-47, AWP, Shotgun) -->
+      <div class="ws-section">
+        <div class="ws-section-title">
+          <span>PRIMARY</span>
+        </div>
+        <div class="ws-grid" id="ws-primary-grid">
+          <!-- AK-47 Card -->
+          <div class="ws-weapon-card selected" data-weapon-id="ak47" data-slot="primary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">AK-47</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path d="M2,21 L5,15 L22,12 L30,13.5 L30,18.5 L24,20 L4,24 Z" />
+                <path d="M30,13.5 L52,13.5 L52,20 L30,20 Z" />
+                <path d="M29,20 L24,27.5 C24,29 25,29.5 27.5,29.5 L32,28.5 L34,20 Z" />
+                <path d="M34,20.5 C34.5,23.5 39,23.5 41,20.5" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <path d="M41,20 L42,24 C44,28 47.5,30.5 52,31 C54.5,31 56,30 56,28.5 C52,28 49,25.5 48,20 Z" />
+                <path d="M52,12.5 L67,12.5 L66,19.5 L52,19.5 Z" />
+                <rect x="67" y="14" width="23" height="2.5" />
+                <rect x="66" y="12.5" width="6" height="2" />
+                <polygon points="86,11 88,9 90,11 90,14 86,14" />
+                <polygon points="90,14 97,13 97,16.5 90,16.5" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Full-Auto Rifle • 30 / 90</div>
+          </div>
+
+          <!-- AWP Card -->
+          <div class="ws-weapon-card" data-weapon-id="awp" data-slot="primary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">AWP</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path fill-rule="evenodd" d="M2,14 L6,10 L22,10 L30,14 L30,19 L26,20 L24,27 C24,28.5 25,29.5 27.5,29.5 L31.5,28.5 L32,19 L54,19 L54,14 L22,14 L18,17 L6,25 L2,24 Z M18,18 C18,16.5 19.5,15.5 21,15.5 C22.5,15.5 24,16.5 24,18 C24,19.5 22.5,20.5 21,20.5 C19.5,20.5 18,19.5 18,18 Z" />
+                <rect x="40" y="19" width="8" height="5" rx="0.5" />
+                <rect x="36" y="11" width="3" height="3" />
+                <rect x="47" y="11" width="3" height="3" />
+                <path d="M29,8 L33,10 L41,10 L41,7.5 L44,7.5 L44,10 L51,10 L56,7.5 L56,13.5 L51,11 L33,11 L29,13 Z" />
+                <rect x="54" y="14.5" width="36" height="2.2" />
+                <rect x="90" y="13.2" width="7" height="4.8" rx="0.4" />
+                <line x1="93" y1="13.2" x2="93" y2="18" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.3" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Sniper Rifle • 5 / 30</div>
+          </div>
+
+          <!-- SHOTGUN Card -->
+          <div class="ws-weapon-card" data-weapon-id="shotgun" data-slot="primary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">SHOTGUN</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path d="M3,15 L7,11 L24,14 L32,16 L32,21 L28,26 L23,26 L21,21 L8,24 L3,24 Z" />
+                <path fill-rule="evenodd" d="M32,13 L48,13 L48,20.5 L32,20.5 Z M38,14.5 L44,14.5 L44,17 L38,17 Z" />
+                <path d="M33,20.5 C34,23.5 38.5,23.5 39.5,20.5" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <rect x="48" y="13.5" width="46" height="2.8" />
+                <polygon points="91,12.5 93,12.5 93,13.5 91,13.5" />
+                <rect x="48" y="16.5" width="40" height="2.4" />
+                <rect x="88" y="16" width="2.5" height="3.4" rx="0.5" />
+                <rect x="56" y="15.5" width="16" height="5.5" rx="1" />
+                <line x1="60" y1="16" x2="60" y2="21" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+                <line x1="64" y1="16" x2="64" y2="21" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+                <line x1="68" y1="16" x2="68" y2="21" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Pump Shotgun • 7 / 28</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Selection (Pistol, Deagle, Revolver) -->
+      <div class="ws-section">
+        <div class="ws-section-title">
+          <span>SECONDARY</span>
+        </div>
+        <div class="ws-grid" id="ws-secondary-grid">
+          <!-- Pistol Card -->
+          <div class="ws-weapon-card selected" data-weapon-id="pistol" data-slot="secondary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">PISTOL</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path fill-rule="evenodd" d="M30,11 L32,9 L34,11 L68,11 L70,9 L72,11 L74,11 L74,18 L30,18 Z M48,11.5 L56,11.5 L56,14.5 L48,14.5 Z" />
+                <line x1="33" y1="12" x2="33" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+                <line x1="35.5" y1="12" x2="35.5" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+                <line x1="38" y1="12" x2="38" y2="17" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1" />
+                <rect x="52" y="18" width="22" height="3" />
+                <path d="M45,18 L46,23 C48,24.5 53,24.5 54,18" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <path d="M49,18 C49,20 50,21 51,21" fill="none" stroke="currentColor" stroke-width="1.1" />
+                <path d="M30,18 C33,18 35,19 36,21 L33,28 C33,29.5 35,30.5 38,30.5 L45,29.5 L47,21 L44,18 Z" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Semi-Auto • 15 / 60</div>
+          </div>
+
+          <!-- Deagle Card -->
+          <div class="ws-weapon-card" data-weapon-id="deagle" data-slot="secondary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">DESERT EAGLE</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path d="M48,8 L76,8 L77,6 L80,6 L81,8 L81,17 L48,17 Z" />
+                <line x1="56" y1="8" x2="56" y2="10.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.4" />
+                <line x1="62" y1="8" x2="62" y2="10.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.4" />
+                <line x1="68" y1="8" x2="68" y2="10.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.4" />
+                <rect x="81" y="8" width="2" height="9" />
+                <path fill-rule="evenodd" d="M26,9 L28,7 L30,9 L48,9 L48,17 L26,17 Z M37,9.5 L46,9.5 L46,14.5 L37,14.5 Z" />
+                <rect x="42" y="17" width="37" height="3.5" />
+                <path d="M42,17 L43,23.5 L52,23.5 L53,17" fill="none" stroke="currentColor" stroke-width="1.4" />
+                <path d="M47,17 C47,19.5 48,21.5 49.5,21.5" fill="none" stroke="currentColor" stroke-width="1.2" />
+                <path d="M26,17 C28,17 31,18 32,20 L28,28 C28,30 31,30.5 35,30.5 L43,29.5 L45,20 L42,17 Z" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Heavy Pistol • 7 / 35</div>
+          </div>
+
+          <!-- Revolver Card -->
+          <div class="ws-weapon-card" data-weapon-id="revolver" data-slot="secondary">
+            <div class="ws-card-header">
+              <span class="ws-weapon-name">REVOLVER</span>
+              <span class="ws-check-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+            </div>
+            <div class="ws-icon-wrap">
+              <svg viewBox="0 0 100 32">
+                <path fill-rule="evenodd" d="M50,9 L80,9 L81,6.5 L84,6.5 L84,17 L50,17 Z M58,10.5 L63,10.5 L63,12.5 L58,12.5 Z M66,10.5 L71,10.5 L71,12.5 L66,12.5 Z M74,10.5 L79,10.5 L79,12.5 L74,12.5 Z" />
+                <rect x="52" y="14" width="31" height="3" />
+                <path d="M34,10 L32,6 L35,8 L36,10 L50,10 L50,13 L34,13 Z" />
+                <rect x="37" y="11" width="13" height="9.5" rx="1.5" />
+                <line x1="41" y1="12" x2="41" y2="19.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+                <line x1="45" y1="12" x2="45" y2="19.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+                <line x1="49" y1="12" x2="49" y2="19.5" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+                <path d="M37,19.5 C37,23.5 43,23.5 44,19.5" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <path d="M40,19.5 C40,21 41,22 42,22" fill="none" stroke="currentColor" stroke-width="1.1" />
+                <path d="M33,13 C35,15 36,18 36,20 L32,26 C31,28.5 32,30.5 36,30.5 C39,30.5 42,29 42,27 L43,20 L37,18 Z" />
+              </svg>
+            </div>
+            <div class="ws-card-desc">Magnum • 6 / 24</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Melee Default Knife Banner -->
+      <div class="ws-knife-banner">
+        <span class="ws-knife-badge">SLOT 3</span>
+        <div class="ws-knife-icon">
+          <svg viewBox="0 0 100 32">
+            <rect x="8" y="13" width="4" height="6" rx="1" />
+            <path d="M12,12.5 L36,13.5 L36,18.5 L12,19.5 Z" />
+            <line x1="18" y1="13" x2="18" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <line x1="24" y1="13" x2="24" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <line x1="30" y1="13" x2="30" y2="19" stroke="rgba(14, 15, 17, 0.9)" stroke-width="1.2" />
+            <rect x="36" y="9" width="4" height="14" rx="0.8" />
+            <path d="M40,11 L74,11 L88,16 L74,21 L40,21 Z" />
+            <line x1="44" y1="16" x2="72" y2="16" stroke="rgba(14, 15, 17, 0.95)" stroke-width="1.2" />
+            <line x1="46" y1="11" x2="48" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="52" y1="11" x2="54" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="58" y1="11" x2="60" y2="9.5" stroke="currentColor" stroke-width="1" />
+            <line x1="64" y1="11" x2="66" y2="9.5" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </div>
+        <span class="ws-knife-text"><strong>COMBAT KNIFE</strong> — Default Melee</span>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="ws-footer">
+        <div class="ws-status-box">
+          <div class="ws-status-dot" id="ws-status-dot"></div>
+          <span id="ws-status-text">Ready to deploy</span>
+        </div>
+        <button class="btn btn-primary btn-deploy-loadout" id="btn-lock-loadout">
+          DEPLOY
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Menu -->
+  <div class="menu-backdrop" id="main-menu">
+    <div class="menu-card">
+      <div class="brand-header">
+        <h1 class="brand-title">COUNTER SIEGE</h1>
+      </div>
+
+      <div class="menu-actions">
+        <button class="btn btn-primary" id="btn-play-bot">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Play vs Bot</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-host-room">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+          <span>Host Match</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-join-room">
+          <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>Join Match</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-options">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Options</span>
+        </button>
+      </div>
+
+      <!-- Host Room Details -->
+      <div class="connection-panel" id="host-panel">
+        <div class="panel-title">Room Code</div>
+        <div class="room-code-display" id="host-room-code" title="Click to copy code">GENERATING...</div>
+        <div class="status-text">
+          <div class="status-dot"></div>
+          <span id="host-status-msg">Waiting for opponent...</span>
+        </div>
+        <button class="btn btn-primary" id="btn-start-hosted-game" style="display: none; margin-top: 6px;">
+          Start Match
+        </button>
+      </div>
+
+      <!-- Join Room Input -->
+      <div class="connection-panel" id="join-panel">
+        <div class="panel-title">Enter Room Code</div>
+        <div class="input-row">
+          <input type="text" class="text-input" id="join-room-input" placeholder="e.g. CS-ABCD" autocomplete="off"
+            spellcheck="false" />
+          <button class="btn btn-primary" id="btn-confirm-join" style="padding: 10px 20px;">Connect</button>
+        </div>
+        <div class="status-text" id="join-status-box" style="display: none;">
+          <div class="status-dot"></div>
+          <span id="join-status-msg">Connecting...</span>
+        </div>
+      </div>
+
+      <!-- Tactical Controls Guide -->
+      <div class="controls-guide-title">
+        <span>CONTROLS</span>
+      </div>
+      <div class="controls-sheet">
+        <div class="control-chip"><span class="key-badge">WASD</span><span class="chip-label">Move</span></div>
+        <div class="control-chip"><span class="key-badge">Q / E</span><span class="chip-label">Lean</span></div>
+        <div class="control-chip"><span class="key-badge">SPACE</span><span class="chip-label">Jump</span></div>
+        <div class="control-chip"><span class="key-badge">CTRL</span><span class="chip-label">Crouch</span></div>
+        <div class="control-chip"><span class="key-badge">LMB / RMB</span><span class="chip-label">Fire / Aim</span></div>
+        <div class="control-chip"><span class="key-badge">R</span><span class="chip-label">Reload</span></div>
+        <div class="control-chip"><span class="key-badge">1 - 3</span><span class="chip-label">Weapons</span></div>
+        <div class="control-chip"><span class="key-badge">ESC</span><span class="chip-label">Menu</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactical Options Modal -->
+  <div id="options-modal" class="modal-backdrop" style="display: none;">
+    <div class="menu-card options-card">
+      <div class="options-header">
+        <h2 class="options-title">OPTIONS & CONTROLS</h2>
+        <span class="options-subtitle">Tune aiming sensitivity & smooth response</span>
+      </div>
+
+      <div class="options-body">
+        <!-- Mouse Sensitivity -->
+        <div class="setting-group">
+          <div class="setting-header">
+            <div class="setting-label-wrap">
+              <span class="setting-name">Mouse Sensitivity</span>
+              <span class="setting-desc">Primary camera rotation speed multiplier</span>
+            </div>
+            <div class="setting-val-display" id="val-sensitivity">1.00</div>
+          </div>
+          <div class="setting-control-row">
+            <input type="range" class="tactical-slider" id="slider-sensitivity" min="0.10" max="4.00" step="0.05" value="1.00" />
+            <input type="number" class="tactical-num-input" id="num-sensitivity" min="0.10" max="4.00" step="0.05" value="1.00" />
+          </div>
+        </div>
+
+        <!-- Aim Smoothing -->
+        <div class="setting-group">
+          <div class="setting-header">
+            <div class="setting-label-wrap">
+              <span class="setting-name">Aim Smoothing</span>
+              <span class="setting-desc">Eliminates mouse micro-jitter & frame stutter for silky smooth tracking</span>
+            </div>
+            <div class="setting-val-display" id="val-smoothing">45%</div>
+          </div>
+          <div class="setting-control-row">
+            <input type="range" class="tactical-slider" id="slider-smoothing" min="0" max="100" step="5" value="45" />
+            <input type="number" class="tactical-num-input" id="num-smoothing" min="0" max="100" step="5" value="45" />
+          </div>
+        </div>
+
+        <!-- Scoped Sensitivity Multiplier -->
+        <div class="setting-group">
+          <div class="setting-header">
+            <div class="setting-label-wrap">
+              <span class="setting-name">Sniper Scope Sensitivity</span>
+              <span class="setting-desc">Aiming scale while zoomed in with sniper scope (AWP)</span>
+            </div>
+            <div class="setting-val-display" id="val-scoped-sens">0.80</div>
+          </div>
+          <div class="setting-control-row">
+            <input type="range" class="tactical-slider" id="slider-scoped-sens" min="0.20" max="2.00" step="0.05" value="0.80" />
+            <input type="number" class="tactical-num-input" id="num-scoped-sens" min="0.20" max="2.00" step="0.05" value="0.80" />
+          </div>
+        </div>
+
+        <!-- Invert Y-Axis -->
+        <div class="setting-group setting-toggle-group">
+          <div class="setting-label-wrap">
+            <span class="setting-name">Invert Y-Axis</span>
+            <span class="setting-desc">Invert vertical look pitch direction</span>
+          </div>
+          <label class="tactical-switch">
+            <input type="checkbox" id="check-invert-y" />
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <!-- Graphics Quality / Performance Mode -->
+        <div class="setting-group">
+          <div class="setting-header">
+            <div class="setting-label-wrap">
+              <span class="setting-name">Graphics & Performance</span>
+              <span class="setting-desc">Low disables heavy shadows & caps resolution for max FPS on laptops</span>
+            </div>
+            <div class="setting-val-display" id="val-graphics">Medium</div>
+          </div>
+          <div class="setting-control-row" style="gap: 8px;">
+            <button type="button" class="btn-preset" data-quality="low" id="preset-low">Low (Max FPS)</button>
+            <button type="button" class="btn-preset active" data-quality="medium" id="preset-medium">Medium</button>
+            <button type="button" class="btn-preset" data-quality="high" id="preset-high">High</button>
+          </div>
+        </div>
+
+        <!-- Top-Right FPS Counter -->
+        <div class="setting-group setting-toggle-group">
+          <div class="setting-label-wrap">
+            <span class="setting-name">Top-Right FPS Counter</span>
+            <span class="setting-desc">Display real-time framerate and frame latency on screen</span>
+          </div>
+          <label class="tactical-switch">
+            <input type="checkbox" id="check-show-fps" checked />
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="options-actions">
+        <button class="btn btn-outline" id="btn-options-reset">Reset Defaults</button>
+        <button class="btn btn-primary" id="btn-options-close" style="padding: 10px 24px;">Save & Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Menu -->
+  <div id="pause-menu" class="modal-backdrop" style="display: none;">
+    <div class="menu-card" style="max-width: 380px; text-align: center;">
+      <h2 style="font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 6px;">PAUSED</h2>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 22px;">Press ESC to resume</p>
+      <div class="menu-actions" style="margin-bottom: 0;">
+        <button class="btn btn-primary" id="btn-resume">Resume</button>
+        <button class="btn btn-secondary" id="btn-pause-options">Options</button>
+        <button class="btn btn-secondary" id="btn-restart">Restart</button>
+        <button class="btn btn-outline" id="btn-leave-menu">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match End Modal -->
+  <div id="game-over-modal" class="modal-backdrop" style="display: none;">
+    <div class="game-over-card">
+      <div class="game-over-title win" id="game-over-title">Round Won</div>
+      <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 20px;" id="game-over-subtitle">Opponent eliminated</p>
+      <div id="game-over-rematch-box" style="display: none; margin-bottom: 20px; font-size: 12.5px; color: var(--accent-sand); background: rgba(226, 180, 114, 0.08); border: 1px solid rgba(226, 180, 114, 0.25); border-radius: 8px; padding: 10px 16px; font-family: var(--font-mono);">
+        <span id="game-over-rematch-text"></span>
+      </div>
+      <div class="menu-actions" style="margin-bottom: 0;">
+        <button class="btn btn-primary" id="btn-play-again">Next Round</button>
+        <button class="btn btn-outline" id="btn-gameover-exit">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vite Entry Point -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
